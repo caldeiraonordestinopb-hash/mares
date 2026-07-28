@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#F26A21">
+<title>Caldeirão de Marés</title>
+<style>
+  :root{--laranja:#F26A21;--laranja-claro:#FF8A47;--laranja-bg:#FFF3EC;--texto:#1a1a1a;--cinza:#8a8a8a;--linha:#eee;--azul:#3a86c8;}
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+  html,body{background:#fff;color:var(--texto);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;}
+  body{max-width:520px;margin:0 auto;min-height:100vh;padding-bottom:90px;}
+
+  header{background:var(--laranja);color:#fff;padding:14px 18px 12px;position:sticky;top:0;z-index:20;box-shadow:0 2px 10px rgba(0,0,0,.12);}
+  header .marca{display:flex;align-items:center;gap:11px;}
+  header .marca img.logo{width:54px;height:54px;border-radius:50%;flex-shrink:0;box-shadow:0 2px 6px rgba(0,0,0,.2);background:#fff;}
+  header h1{font-size:21px;font-weight:800;letter-spacing:.3px;line-height:1.05;}
+  header .sub{font-size:12px;opacity:.9;margin-top:3px;}
+
+  /* Abas deslizantes */
+  .tabs{display:flex;position:relative;background:var(--laranja);box-shadow:0 2px 6px rgba(0,0,0,.1);position:sticky;top:0;z-index:15;}
+  .tab{flex:1;background:none;border:none;color:#fff;opacity:.65;padding:13px 8px;font-weight:800;font-size:15px;cursor:pointer;transition:opacity .2s;}
+  .tab.active{opacity:1;}
+  .tab-ind{position:absolute;bottom:0;left:0;height:3px;width:50%;background:#fff;border-radius:3px 3px 0 0;transition:transform .3s;}
+
+  .controls{padding:12px 14px;background:var(--laranja-bg);border-bottom:1px solid #f2ddce;}
+  .row{display:flex;gap:8px;margin-bottom:8px;}
+  .row:last-child{margin-bottom:0;}
+  input,select,button{font-size:15px;font-family:inherit;border-radius:10px;border:1px solid #e6c9b5;padding:11px 12px;background:#fff;color:var(--texto);outline:none;}
+  input:focus,select:focus{border-color:var(--laranja);}
+  #busca{flex:1;}
+  #btnBuscar,#btnLocal{background:var(--laranja);color:#fff;border:none;font-weight:700;padding:11px 14px;white-space:nowrap;cursor:pointer;}
+  #btnBuscar:active,#btnLocal:active{background:#d95a15;}
+  #data{flex:1;} #favoritos{flex:1;}
+  #sugestoes{list-style:none;background:#fff;border:1px solid var(--linha);border-radius:10px;margin:4px 14px 0;overflow:hidden;display:none;}
+  #sugestoes li{padding:11px 13px;border-bottom:1px solid var(--linha);cursor:pointer;font-size:14px;}
+  #sugestoes li:last-child{border-bottom:none;}
+  #sugestoes li:active{background:var(--laranja-bg);}
+  #sugestoes .peq{color:var(--cinza);font-size:12px;}
+
+  .viewport{overflow:hidden;}
+  .slides{display:flex;width:200%;transition:transform .3s ease;}
+  .slide{width:50%;}
+
+  .titulo{padding:16px 18px 6px;}
+  .titulo h2{font-size:23px;font-weight:800;}
+  .colhead{display:flex;align-items:center;padding:8px 18px;color:var(--cinza);font-size:12.5px;font-weight:700;letter-spacing:.5px;border-bottom:1px solid var(--linha);}
+  .colhead .c-hora{width:64px;} .colhead .c-alt{width:56px;} .colhead .c-bar{flex:1;} .colhead .c-coef{width:44px;text-align:right;}
+  .linha{display:flex;align-items:center;padding:13px 18px;border-bottom:1px solid var(--linha);}
+  .linha.agora{background:var(--laranja-bg);}
+  .linha .hora{width:64px;font-size:19px;font-weight:600;}
+  .linha .alt{width:56px;font-size:19px;font-weight:600;}
+  .linha .barwrap{flex:1;padding:0 6px;}
+  .linha .bar{height:26px;background:var(--laranja);border-radius:5px;min-width:6px;}
+  .linha .coef{width:44px;text-align:right;font-size:19px;font-weight:600;color:#555;}
+  .nota{padding:10px 18px 4px;font-size:11px;color:var(--cinza);text-align:center;}
+
+  /* Clima */
+  .clima-top{margin:14px 14px 4px;background:var(--laranja-bg);border-radius:16px;padding:16px 18px;display:flex;align-items:center;gap:14px;}
+  .clima-top .ic{font-size:52px;line-height:1;}
+  .clima-top .temp{font-size:40px;font-weight:800;line-height:1;}
+  .clima-top .desc{font-size:14px;color:#555;margin-top:4px;}
+  .clima-top .mm{font-size:13px;color:#777;margin-top:2px;}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:12px 14px 0;}
+  .card{border:1px solid var(--linha);border-radius:14px;padding:12px 13px;}
+  .card .lab{font-size:11px;color:var(--cinza);font-weight:700;text-transform:uppercase;letter-spacing:.4px;display:flex;align-items:center;gap:5px;}
+  .card .val{font-size:22px;font-weight:800;margin-top:4px;}
+  .card .val small{font-size:12.5px;font-weight:600;color:#777;}
+  .faixa-tit{padding:18px 16px 8px;font-weight:800;font-size:15px;}
+  .faixa{display:flex;overflow-x:auto;gap:8px;padding:0 14px 10px;-webkit-overflow-scrolling:touch;}
+  .hchip{flex:0 0 auto;width:62px;text-align:center;border:1px solid var(--linha);border-radius:12px;padding:9px 4px;}
+  .hchip .h{font-size:12px;color:#666;} .hchip .i{font-size:20px;margin:3px 0;}
+  .hchip .t{font-weight:800;} .hchip .p{font-size:11px;color:var(--azul);margin-top:2px;min-height:14px;}
+
+  .msg{padding:40px 20px;text-align:center;color:var(--cinza);font-size:15px;line-height:1.5;}
+  .spin{display:inline-block;width:26px;height:26px;border:3px solid #f0d3c0;border-top-color:var(--laranja);border-radius:50%;animation:g .8s linear infinite;}
+  @keyframes g{to{transform:rotate(360deg)}}
+
+  .footer{position:fixed;bottom:0;left:0;right:0;max-width:520px;margin:0 auto;background:#fff;border-top:1px solid var(--linha);display:flex;padding:14px 18px;font-size:17px;font-weight:700;box-shadow:0 -2px 10px rgba(0,0,0,.05);}
+  .footer .local{flex:1;display:flex;align-items:center;gap:7px;min-width:0;}
+  .footer .local span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .footer .local svg{fill:var(--laranja);flex-shrink:0;}
+  .footer .data{color:#444;flex-shrink:0;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="marca">
+    <img class="logo" src="data:image/webp;base64,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" alt="Logo Caldeirão Nordestino">
+    <div>
+      <h1>Caldeirão<br>de Marés</h1>
+      <div class="sub">Marés e clima por localidade</div>
+    </div>
+  </div>
+</header>
+
+<div class="tabs">
+  <button class="tab active" data-i="0">🌊 Marés</button>
+  <button class="tab" data-i="1">☀️ Clima</button>
+  <span class="tab-ind" id="tabInd"></span>
+</div>
+
+<div class="controls">
+  <div class="row">
+    <input id="busca" type="text" placeholder="Digite uma cidade litorânea..." autocomplete="off">
+    <button id="btnBuscar">Buscar</button>
+  </div>
+  <div class="row">
+    <select id="favoritos"><option value="">Locais rápidos…</option></select>
+    <button id="btnLocal" title="Usar minha localização">📍</button>
+  </div>
+  <div class="row"><input id="data" type="date"></div>
+</div>
+<ul id="sugestoes"></ul>
+
+<div class="viewport">
+  <div class="slides" id="slides">
+    <section class="slide">
+      <div class="titulo"><h2>Previsão do nível do mar</h2></div>
+      <div class="colhead"><span class="c-hora">HORA</span><span class="c-alt">ALTURA</span><span class="c-bar"></span><span class="c-coef">COEF.</span></div>
+      <div id="tabela"><div class="msg">Escolha um local para ver a previsão.</div></div>
+      <div class="nota">Dados: modelo global Open-Meteo. Alturas e coeficiente são estimativas de referência.</div>
+    </section>
+    <section class="slide">
+      <div id="clima"><div class="msg">Escolha um local para ver o clima.</div></div>
+    </section>
+  </div>
+</div>
+
+<div class="footer">
+  <div class="local"><svg width="18" height="18" viewBox="0 0 24 24"><path d="M12 2C8.1 2 5 5.1 5 9c0 5.2 7 13 7 13s7-7.8 7-13c0-3.9-3.1-7-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z"/></svg><span id="localNome">—</span></div>
+  <div class="data" id="dataLabel">—</div>
+</div>
+
+<script>
+const FAVORITOS=[
+  {nome:"Cabedelo, PB",lat:-6.9811,lon:-34.8339},
+  {nome:"Paulista, PE",lat:-7.9407,lon:-34.8728},
+  {nome:"Recife, PE",lat:-8.0476,lon:-34.8770},
+  {nome:"João Pessoa, PB",lat:-7.1195,lon:-34.8450},
+  {nome:"Maceió, AL",lat:-9.6498,lon:-35.7089},
+  {nome:"Natal, RN",lat:-5.7945,lon:-35.2110},
+];
+let atual=FAVORITOS[0], maresCache=null, climaCache=null, aba=0;
+const el=id=>document.getElementById(id);
+const MESES=["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"];
+const DIRS=["N","NE","L","SE","S","SO","O","NO"];
+function dirVento(g){return DIRS[Math.round(g/45)%8];}
+function avg(a){const v=a.filter(x=>x!=null);return v.length?v.reduce((s,x)=>s+x,0)/v.length:null;}
+
+function wmo(c,dia){
+  const M={0:["Céu limpo",dia?"☀️":"🌙"],1:["Predom. limpo",dia?"🌤️":"🌙"],2:["Parcial. nublado","⛅"],3:["Nublado","☁️"],
+    45:["Névoa","🌫️"],48:["Névoa gelada","🌫️"],51:["Garoa fraca","🌦️"],53:["Garoa","🌦️"],55:["Garoa forte","🌦️"],
+    56:["Garoa gelada","🌦️"],57:["Garoa gelada","🌦️"],61:["Chuva fraca","🌧️"],63:["Chuva","🌧️"],65:["Chuva forte","🌧️"],
+    66:["Chuva gelada","🌧️"],67:["Chuva gelada","🌧️"],71:["Neve fraca","🌨️"],73:["Neve","🌨️"],75:["Neve forte","🌨️"],
+    77:["Granizo fino","🌨️"],80:["Pancadas fracas","🌦️"],81:["Pancadas","🌦️"],82:["Pancadas fortes","⛈️"],
+    85:["Neve","🌨️"],86:["Neve forte","🌨️"],95:["Trovoada","⛈️"],96:["Trovoada c/ granizo","⛈️"],99:["Trovoada c/ granizo","⛈️"]};
+  return M[c]||["—","🌡️"];
+}
+
+function init(){
+  const sel=el('favoritos');
+  FAVORITOS.forEach((f,i)=>{const o=document.createElement('option');o.value=i;o.textContent=f.nome;sel.appendChild(o);});
+  const hoje=new Date(), di=el('data');
+  di.value=isoLocal(hoje); di.min=isoLocal(hoje);
+  const mx=new Date(hoje); mx.setDate(mx.getDate()+15); di.max=isoLocal(mx);
+
+  sel.addEventListener('change',()=>{if(sel.value!==''){atual=FAVORITOS[+sel.value];carregar();}});
+  di.addEventListener('change',()=>{atualizarData();renderMares();renderClima();});
+  el('btnBuscar').addEventListener('click',fazerBusca);
+  el('busca').addEventListener('keydown',e=>{if(e.key==='Enter')fazerBusca();});
+  el('btnLocal').addEventListener('click',usarLocalizacao);
+  document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>setAba(+b.dataset.i)));
+
+  // swipe horizontal
+  const vp=document.querySelector('.viewport'); let x0=null,y0=null;
+  vp.addEventListener('touchstart',e=>{x0=e.touches[0].clientX;y0=e.touches[0].clientY;},{passive:true});
+  vp.addEventListener('touchend',e=>{
+    if(x0==null)return; const dx=e.changedTouches[0].clientX-x0, dy=e.changedTouches[0].clientY-y0;
+    if(Math.abs(dx)>50&&Math.abs(dx)>Math.abs(dy)){ if(dx<0)setAba(1); else setAba(0); }
+    x0=null;
+  },{passive:true});
+
+  carregar();
+}
+
+function setAba(i){
+  aba=i;
+  el('slides').style.transform=`translateX(${i? '-50%':'0'})`;
+  el('tabInd').style.transform=`translateX(${i?'100%':'0'})`;
+  document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',+b.dataset.i===i));
+}
+
+function isoLocal(d){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
+function atualizarData(){const [Y,M,D]=el('data').value.split('-');el('dataLabel').textContent=`${D} ${MESES[+M-1]} ${Y}`;}
+
+async function fazerBusca(){
+  const q=el('busca').value.trim(); if(!q)return;
+  const ul=el('sugestoes'); ul.style.display='block'; ul.innerHTML='<li>Buscando…</li>';
+  try{
+    const r=await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(q)}&count=8&language=pt&format=json`);
+    const j=await r.json();
+    if(!j.results||!j.results.length){ul.innerHTML='<li>Nada encontrado. Tente outro nome.</li>';return;}
+    ul.innerHTML='';
+    j.results.forEach(res=>{
+      const li=document.createElement('li');
+      li.innerHTML=`${res.name} <span class="peq">${[res.admin1,res.country].filter(Boolean).join(' · ')}</span>`;
+      li.onclick=()=>{atual={nome:`${res.name}${res.admin1?', '+(res.admin1.length>14?res.admin1.slice(0,12)+'…':res.admin1):''}`,lat:res.latitude,lon:res.longitude};ul.style.display='none';ul.innerHTML='';el('busca').value='';el('favoritos').value='';carregar();};
+      ul.appendChild(li);
+    });
+  }catch(e){ul.innerHTML='<li>Erro na busca. Verifique a internet.</li>';}
+}
+
+function usarLocalizacao(){
+  if(!navigator.geolocation){alert('Localização não suportada.');return;}
+  el('btnLocal').textContent='…';
+  navigator.geolocation.getCurrentPosition(
+    p=>{atual={nome:'Minha localização',lat:p.coords.latitude,lon:p.coords.longitude};el('favoritos').value='';el('btnLocal').textContent='📍';carregar();},
+    ()=>{el('btnLocal').textContent='📍';alert('Não foi possível obter a localização.');}
+  );
+}
+
+function carregar(){
+  el('localNome').textContent=atual.nome; atualizarData();
+  el('tabela').innerHTML='<div class="msg"><span class="spin"></span><br><br>Carregando marés…</div>';
+  el('clima').innerHTML='<div class="msg"><span class="spin"></span><br><br>Carregando clima…</div>';
+  carregarMares(); carregarClima();
+}
+
+async function carregarMares(){
+  try{
+    const url=`https://marine-api.open-meteo.com/v1/marine?latitude=${atual.lat}&longitude=${atual.lon}&hourly=sea_level_height_msl&timezone=auto&forecast_days=16&cell_selection=sea`;
+    const j=await (await fetch(url)).json();
+    if(!j.hourly||!j.hourly.sea_level_height_msl)throw 0;
+    const times=j.hourly.time, niveis=j.hourly.sea_level_height_msl, porDia={};
+    times.forEach((t,i)=>{const d=t.slice(0,10);(porDia[d]=porDia[d]||[]).push(niveis[i]);});
+    let aMin=Infinity,aMax=-Infinity; const amps={};
+    for(const d in porDia){const v=porDia[d].filter(x=>x!=null);if(!v.length){amps[d]=null;continue;}const a=Math.max(...v)-Math.min(...v);amps[d]=a;aMin=Math.min(aMin,a);aMax=Math.max(aMax,a);}
+    const coefPorDia={};
+    for(const d in amps){if(amps[d]==null){coefPorDia[d]=null;continue;}const n=(aMax===aMin)?0.6:(amps[d]-aMin)/(aMax-aMin);coefPorDia[d]=Math.round(20+n*(118-20));}
+    maresCache={times,niveis,coefPorDia}; renderMares();
+  }catch(e){el('tabela').innerHTML='<div class="msg">Não há previsão de maré para este ponto (pode ser distante do mar).<br><br>Tente uma cidade litorânea.</div>';}
+}
+
+function renderMares(){
+  if(!maresCache)return;
+  const ds=el('data').value, {times,niveis,coefPorDia}=maresCache, idxs=[];
+  times.forEach((t,i)=>{if(t.slice(0,10)===ds)idxs.push(i);});
+  if(!idxs.length){el('tabela').innerHTML='<div class="msg">Sem dados para esta data.</div>';return;}
+  const vals=idxs.map(i=>niveis[i]), min=Math.min(...vals), max=Math.max(...vals);
+  const off=(min<0.2)?(0.2-min):0, maxReal=max+off, coef=coefPorDia[ds];
+  const agoraH=new Date().getHours(), eHoje=ds===isoLocal(new Date());
+  let html='';
+  idxs.forEach(i=>{
+    const hora=times[i].slice(11,16), h=+times[i].slice(11,13), altR=niveis[i]+off;
+    const larg=Math.max(4,(altR/maxReal)*88), cls=(eHoje&&h===agoraH)?'linha agora':'linha';
+    html+=`<div class="${cls}"><span class="hora">${hora}</span><span class="alt">${altR.toFixed(1)}</span><span class="barwrap"><div class="bar" style="width:${larg.toFixed(0)}%"></div></span><span class="coef">${coef??'—'}</span></div>`;
+  });
+  el('tabela').innerHTML=html;
+}
+
+async function carregarClima(){
+  try{
+    const url=`https://api.open-meteo.com/v1/forecast?latitude=${atual.lat}&longitude=${atual.lon}`
+      +`&current=temperature_2m,relative_humidity_2m,apparent_temperature,is_day,precipitation,weather_code,surface_pressure,wind_speed_10m,wind_direction_10m,wind_gusts_10m`
+      +`&hourly=temperature_2m,relative_humidity_2m,precipitation_probability,weather_code,surface_pressure,wind_speed_10m,uv_index,visibility`
+      +`&daily=weather_code,temperature_2m_max,temperature_2m_min,apparent_temperature_max,apparent_temperature_min,sunrise,sunset,uv_index_max,precipitation_sum,precipitation_probability_max,wind_speed_10m_max,wind_gusts_10m_max,wind_direction_10m_dominant`
+      +`&timezone=auto&forecast_days=16&wind_speed_unit=kmh`;
+    climaCache=await (await fetch(url)).json();
+    if(!climaCache.daily)throw 0;
+    renderClima();
+  }catch(e){el('clima').innerHTML='<div class="msg">Não foi possível carregar o clima deste local.</div>';}
+}
+
+function renderClima(){
+  if(!climaCache||!climaCache.daily)return;
+  const ds=el('data').value, c=climaCache, d=c.daily, di=d.time.indexOf(ds);
+  if(di<0){el('clima').innerHTML='<div class="msg">Sem dados de clima para esta data.</div>';return;}
+  const eHoje=ds===isoLocal(new Date());
+
+  // horas do dia
+  const hi=[]; c.hourly.time.forEach((t,i)=>{if(t.slice(0,10)===ds)hi.push(i);});
+  const umidDia=Math.round(avg(hi.map(i=>c.hourly.relative_humidity_2m[i]))||0);
+  const pressDia=Math.round(avg(hi.map(i=>c.hourly.surface_pressure[i]))||0);
+  const visDia=avg(hi.map(i=>c.hourly.visibility[i]));
+
+  // topo
+  let icTemp,desc,ic,mm;
+  if(eHoje&&c.current){
+    const w=wmo(c.current.weather_code,c.current.is_day===1); ic=w[1]; desc=w[0];
+    icTemp=Math.round(c.current.temperature_2m);
+    mm=`Sensação ${Math.round(c.current.apparent_temperature)}° · máx ${Math.round(d.temperature_2m_max[di])}° / mín ${Math.round(d.temperature_2m_min[di])}°`;
+  }else{
+    const w=wmo(d.weather_code[di],true); ic=w[1]; desc=w[0];
+    icTemp=Math.round(d.temperature_2m_max[di]);
+    mm=`mín ${Math.round(d.temperature_2m_min[di])}° · sensação até ${Math.round(d.apparent_temperature_max[di])}°`;
+  }
+
+  const cards=[
+    ['💧 Umidade',`${eHoje&&c.current?Math.round(c.current.relative_humidity_2m):umidDia}<small>%</small>`],
+    ['💨 Vento',`${Math.round(d.wind_speed_10m_max[di])}<small> km/h ${dirVento(d.wind_direction_10m_dominant[di])}</small>`],
+    ['🌬️ Rajadas',`${Math.round(d.wind_gusts_10m_max[di])}<small> km/h</small>`],
+    ['🌧️ Chuva',`${(d.precipitation_sum[di]||0).toFixed(1)}<small> mm · ${d.precipitation_probability_max[di]??0}%</small>`],
+    ['🔽 Pressão',`${eHoje&&c.current?Math.round(c.current.surface_pressure):pressDia}<small> hPa</small>`],
+    ['☀️ Índice UV',`${Math.round(d.uv_index_max[di]??0)}`],
+    ['🌅 Nascer do sol',`${d.sunrise[di].slice(11,16)}`],
+    ['🌇 Pôr do sol',`${d.sunset[di].slice(11,16)}`],
+  ];
+  if(visDia!=null)cards.push(['👁️ Visibilidade',`${(visDia/1000).toFixed(0)}<small> km</small>`]);
+
+  // faixa horária
+  let chips='';
+  hi.forEach(i=>{
+    const h=+c.hourly.time[i].slice(11,13), w=wmo(c.hourly.weather_code[i],h>=6&&h<19);
+    const p=c.hourly.precipitation_probability[i];
+    chips+=`<div class="hchip"><div class="h">${String(h).padStart(2,'0')}h</div><div class="i">${w[1]}</div><div class="t">${Math.round(c.hourly.temperature_2m[i])}°</div><div class="p">${p?p+'%':''}</div></div>`;
+  });
+
+  el('clima').innerHTML=`
+    <div class="clima-top"><div class="ic">${ic}</div><div><div class="temp">${icTemp}°</div><div class="desc">${desc}</div><div class="mm">${mm}</div></div></div>
+    <div class="grid">${cards.map(c=>`<div class="card"><div class="lab">${c[0]}</div><div class="val">${c[1]}</div></div>`).join('')}</div>
+    <div class="faixa-tit">Hora a hora</div>
+    <div class="faixa">${chips}</div>`;
+}
+
+init();
+</script>
+</body>
+</html>
