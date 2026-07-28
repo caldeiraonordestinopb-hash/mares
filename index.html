@@ -38,7 +38,7 @@
   .colhead{display:flex;align-items:center;padding:8px 18px;color:var(--cinza);font-size:12.5px;font-weight:700;letter-spacing:.5px;border-bottom:1px solid var(--linha);}
   .colhead .c-hora{width:64px;} .colhead .c-alt{width:56px;} .colhead .c-bar{flex:1;} .colhead .c-coef{width:44px;text-align:right;}
   .linha{display:flex;align-items:center;padding:13px 18px;border-bottom:1px solid var(--linha);}
-  .linha.agora{background:var(--laranja-bg);}
+  .linha.agora{background:#DCF5DE;}
   .linha .hora{width:64px;font-size:19px;font-weight:600;}
   .linha .alt{width:56px;font-size:19px;font-weight:600;}
   .linha .barwrap{flex:1;padding:0 6px;}
@@ -147,7 +147,7 @@ function init(){
   FAVORITOS.forEach((f,i)=>{const o=document.createElement('option');o.value=i;o.textContent=f.nome;sel.appendChild(o);});
   const hoje=new Date(), di=el('data');
   di.value=isoLocal(hoje); di.min=isoLocal(hoje);
-  const mx=new Date(hoje); mx.setDate(mx.getDate()+15); di.max=isoLocal(mx);
+  const mx=new Date(hoje); mx.setDate(mx.getDate()+36); di.max=isoLocal(mx);
   sel.addEventListener('change',()=>{if(sel.value!==''){atual=FAVORITOS[+sel.value];carregar();}});
   di.addEventListener('change',()=>{atualizarData();renderMares();renderClima();});
   el('btnBuscar').addEventListener('click',fazerBusca);
@@ -202,12 +202,14 @@ async function carregarMares(){
       if(nr.status===401||nr.status===403)throw{t:'auth'};
       if(nr.status===429)throw{t:'lim'};
       const nj=await nr.json();
-      const arr=nj.stations||nj.results||nj.nearest||(Array.isArray(nj)?nj:[]);
-      const s0=arr[0]||nj.station;
-      if(!s0||!s0.id)throw{t:'est'};
-      st={id:s0.id,name:s0.name||''}; stationCache[ck]=st;
+      let arr=Array.isArray(nj)?nj:(nj.stations||nj.results||nj.data||nj.nearest||[]);
+      if(!Array.isArray(arr))arr=[arr];
+      const s0=arr[0]||nj.station||nj;
+      const sid=s0&&(s0.id||s0.stationId||s0.station_id||s0.slug);
+      if(!sid)throw{t:'est'};
+      st={id:sid,name:s0.name||s0.stationName||''}; stationCache[ck]=st;
     }
-    const tr=await fetch(`https://tidecheck.com/api/station/${st.id}/tides?days=16&datum=LAT&start=${isoLocal(new Date())}`,{headers:{'X-API-Key':CHAVE_TIDECHECK}});
+    const tr=await fetch(`https://tidecheck.com/api/station/${st.id}/tides?days=37&datum=LAT&start=${isoLocal(new Date())}`,{headers:{'X-API-Key':CHAVE_TIDECHECK}});
     if(tr.status===429)throw{t:'lim'};
     if(!tr.ok)throw{t:'erro'};
     const tj=await tr.json();
@@ -302,7 +304,7 @@ async function carregarClima(){
 function renderClima(){
   if(!climaCache||!climaCache.daily)return;
   const ds=el('data').value, c=climaCache, d=c.daily, di=d.time.indexOf(ds);
-  if(di<0){el('clima').innerHTML='<div class="msg">Sem dados de clima para esta data.</div>';return;}
+  if(di<0){el('clima').innerHTML='<div class="msg">O clima só vai até ~16 dias à frente.<br><br>As marés dessa data continuam disponíveis na aba 🌊 Marés.</div>';return;}
   const eHoje=ds===isoLocal(new Date());
   const hi=[]; c.hourly.time.forEach((t,i)=>{if(t.slice(0,10)===ds)hi.push(i);});
   const umidDia=Math.round(avg(hi.map(i=>c.hourly.relative_humidity_2m[i]))||0);
